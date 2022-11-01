@@ -1,5 +1,6 @@
 export class Color {
-  static white = new Color(0, 0, 0, 1)
+  static white = new Color(255, 255, 255, 255)
+  static black = new Color(0, 0, 0, 255)
 
   constructor(
     readonly r: number, 

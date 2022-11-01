@@ -9,9 +9,7 @@ const sampler_uniform = 'u_texture_sampler'
 const matrix_uniform = 'u_matrix'
 
 
-
-export class Batch {
-
+class _Batch {
 
   m_default_material!: Material
   m_mesh!: Mesh
@@ -105,6 +103,7 @@ export class Batch {
 }
 
 
+export const batch = new _Batch()
 
 class Vertex {
   constructor(readonly pos: Vec2,

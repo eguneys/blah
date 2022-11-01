@@ -2,7 +2,7 @@ const modf = (x: number, m: number) => {
   return x - Math.floor(x / m) * m
 }
 
-export class Time {
+export class _Time {
 
 
   ticks_per_second: number = 100000
@@ -41,3 +41,5 @@ export class Time {
     return modf(time - offset, interval * 2) >= interval
   }
 }
+
+export const Time = new _Time()
