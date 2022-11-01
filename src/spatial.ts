@@ -211,7 +211,7 @@ export class Vec4 {
 
 export class Rect {
 
-  static make = (x: number, y: number, w: number, h: number) => new Rect(x, y, w, h)
+  static make = (x: number = 0, y: number = 0, w: number = 0, h: number = 0) => new Rect(x, y, w, h)
 
 
   add(v: Vec2) {

@@ -1,6 +1,6 @@
 import { Rect, Vec2, Mat3x2, Mat4x4 } from './spatial'
 import { Color } from './color'
-import { Texture, Target, TextureSampler, Material, DrawCall } from './graphics'
+import { Mesh, Texture, Target, TextureSampler, Material, DrawCall } from './graphics'
 import { Subtexture } from './subtexture'
 import { SpriteFont } from './spritefont'
 
@@ -13,18 +13,18 @@ const matrix_uniform = 'u_matrix'
 export class Batch {
 
 
-  m_default_material: Material
-  m_mesh: Mesh
+  m_default_material!: Material
+  m_mesh!: Mesh
   m_matrix: Mat3x2 = Mat3x2.identity
   m_tex_mult = 255
   m_text_wash = 0
-  m_batch: DrawBatch
-  m_vertices: Array<Vertex>
-  m_indices: Array<number>
-  m_matrix_stack: Array<Mat3x2>
-  m_scissor_stack: Array<Rect>
-  m_material_stack: Array<Material>
-  m_batches: Array<DrawBatch>
+  m_batch!: DrawBatch
+  m_vertices!: Array<Vertex>
+  m_indices!: Array<number>
+  m_matrix_stack!: Array<Mat3x2>
+  m_scissor_stack!: Array<Rect>
+  m_material_stack!: Array<Material>
+  m_batches!: Array<DrawBatch>
   m_batch_insert = 0
 
 
@@ -32,7 +32,7 @@ export class Batch {
 
 
   integerize: boolean = false
-  default_sampler: TextureSampler
+  default_sampler!: TextureSampler
 
   push_matrix(matrix: Mat3x2, absolute: boolean = false) {
   }
