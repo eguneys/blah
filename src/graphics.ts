@@ -5,6 +5,36 @@ import { App } from './app'
 import { Log } from './common'
 import { Vertex } from './batch'
 
+const blah_calc_uniform_size = (uniform: UniformInfo) => {
+  let components = 0
+  switch(uniform.type) {
+    case UniformType.Float: 
+      components = 1
+      break
+    case UniformType.Float2:
+      components = 2
+      break
+    case UniformType.Float3:
+      components = 3
+      break
+    case UniformType.Float4:
+      components = 4
+      break
+    case UniformType.Mat3x2:
+      components = 9
+      break
+    case UniformType.Mat4x4:
+      components = 16
+      break
+    default:
+      break
+  }
+
+  return components * uniform.array_length
+
+}
+
+
 export type TextureRef = Texture | undefined
 
 export enum UniformType {
@@ -39,7 +69,24 @@ export class UniformInfo {
 export class VertexFormat {
   stride: number = 0
 
-  constructor(readonly attributes: Array<VertexAttribute>) {}
+  constructor(readonly attributes: Array<VertexAttribute>) {
+
+    attributes.forEach(attribute => {
+      switch (attribute.type) {
+        case VertexType.Float: this.stride += 4
+          break
+        case VertexType.Float2: this.stride += 8 
+          break
+        case VertexType.Float3: this.stride += 12 
+          break
+        case VertexType.Float4: this.stride += 16 
+          break
+        case VertexType.UByte4: this.stride += 4 
+          break
+      }
+    })
+
+  }
 }
 
 export class VertexAttribute {
@@ -144,12 +191,12 @@ export abstract class Mesh {
 
   static create = () => App.renderer.create_mesh()
 
+  abstract index_count: number
+  abstract vertex_count: number
+  abstract instance_count: number
 
   abstract index_data(indices: Array<number>): void
   abstract vertex_data(format: VertexFormat, vertices: Array<Vertex>): void
-
-  instance_count!: number
-  index_count!: number
 }
 
 export abstract class Shader {
@@ -177,8 +224,35 @@ export class Material {
     return this.m_shader
   }
 
+  m_data: Float32Array
+
+  get data() {
+    return this.m_data
+  }
+
   constructor(shader: Shader) {
     this.m_shader = shader
+
+
+    let uniforms = shader.uniforms
+
+    let float_size = 0
+
+    uniforms.forEach(uniform => {
+      if (uniform.type === UniformType.None) {
+        return 
+      }
+
+      if (uniform.type === UniformType.Texture2D) {
+      }
+
+      if (uniform.type === UniformType.Sampler2D) {
+      }
+
+      float_size += blah_calc_uniform_size(uniform)
+    })
+
+    this.m_data = new Float32Array(float_size)
   }
 
 
@@ -196,6 +270,7 @@ export class Material {
   }
 
   set_matrix(name: string, mat: Mat4x4) {
+    
   }
 
   has_value(name: string) {

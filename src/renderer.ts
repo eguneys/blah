@@ -126,7 +126,7 @@ export class WebGL_Shader extends Shader {
 
 export class WebGL_Mesh extends Mesh {
 
-  m_id!: number
+  m_id: WebGLVertexArrayObject
   m_index_format!: number
 
   m_vertex_buffer!: WebGLBuffer
@@ -145,6 +145,23 @@ export class WebGL_Mesh extends Mesh {
   get gl_index_format() { return this.m_index_format }
   get gl_index_size() { return this.m_index_size } 
 
+
+  get index_count() {
+    return this.m_index_count
+  }
+
+  get instance_count() {
+    return this.m_instance_count
+  }
+
+  get vertex_count() {
+    return this.m_vertex_count
+  }
+
+  constructor() {
+    super()
+    this.m_id = App.renderer.gl.createVertexArray()!
+  }
 
   vertex_data(format: VertexFormat, vertices: Array<Vertex>) {
 
@@ -186,7 +203,7 @@ export class WebGL_Mesh extends Mesh {
       this.m_index_size = 4
 
       App.renderer.gl.bindBuffer(App.renderer.gl.ELEMENT_ARRAY_BUFFER, this.m_index_buffer)
-      App.renderer.gl.bufferData(App.renderer.gl.ELEMENT_ARRAY_BUFFER, this.m_index_size * _indices.length, App.renderer.gl.DYNAMIC_DRAW)
+      App.renderer.gl.bufferData(App.renderer.gl.ELEMENT_ARRAY_BUFFER, _indices, App.renderer.gl.DYNAMIC_DRAW)
     }
   }
 
@@ -433,16 +450,44 @@ export class Renderer {
 
     this.gl.useProgram(shader.gl_id)
 
-    /*
     let texture_slot = 0
     let texture_ids = []
     let uniforms = shader.uniforms
     let data = pass.material.data
+    let i_data = 0
 
-    uniforms.forEach(uniform => {
+    uniforms.forEach((uniform, i) => {
+      let location = shader.uniform_locations[i]
+
+      if (uniform.type === UniformType.Sampler2D) {
+        return
+      }
+
+      if (uniform.type === UniformType.Texture2D) {
+
+      }
+
+      if (uniform.type === UniformType.Float) {
+        App.renderer.gl.uniform1fv(location, data.slice(i_data, i_data + 1 * uniform.array_length))
+        i_data += 1 * uniform.array_length
+      } else if (uniform.type === UniformType.Float2) {
+        App.renderer.gl.uniform2fv(location, data.slice(i_data, i_data + 2 * uniform.array_length))
+        i_data += 2 * uniform.array_length
+      } else if (uniform.type === UniformType.Float3) {
+        App.renderer.gl.uniform3fv(location, data.slice(i_data, i_data + 3 * uniform.array_length))
+        i_data += 3 * uniform.array_length
+      } else if (uniform.type === UniformType.Float4) {
+        App.renderer.gl.uniform4fv(location, data.slice(i_data, i_data + 4 * uniform.array_length))
+        i_data += 4 * uniform.array_length
+      } else if (uniform.type === UniformType.Mat3x2) {
+        App.renderer.gl.uniformMatrix3fv(location, data.slice(i_data, i_data + 9 * uniform.array_length))
+        i_data += 9 * uniform.array_length
+      } else if (uniform.type === UniformType.Mat4x4) {
+        App.renderer.gl.uniformMatrix4fv(location, data.slice(i_data, i_data + 16 * uniform.array_length))
+        i_data += 16 * uniform.array_length
+      }
 
     })
-   */
 
 
 
