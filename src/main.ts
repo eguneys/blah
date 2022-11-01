@@ -1,4 +1,4 @@
-import { Vec2, Color, App, batch, Target } from './'
+import { Mat3x2, Vec2, Color, App, batch, Target } from './'
 
 class Game {
 
@@ -30,7 +30,17 @@ class Game {
         let buffer_center = Vec2.make(this.buffer.width, this.buffer.height).scale(1/2)
 
         App.backbuffer.clear(Color.black)
+                                                  
+        batch.push_matrix(Mat3x2.create_transform(screen_center, // position
+                                                  buffer_center, // origin
+                                                  Vec2.one.scale(scale), // scale
+                                                  0                      // rotation
+                                                 ))
 
+        batch.tex(this.buffer.texture(0), Vec2.zero, Color.white)
+        batch.pop_matrix()
+        batch.render(App.backbuffer)
+        batch.clear()
     }
   }
 }

@@ -1,6 +1,10 @@
 import { Vec2 } from './spatial'
 import { Color } from './color'
-import { TextureSampler, TextureFilter, TextureWrap, TextureFormat, Mesh, Shader, Texture, DrawCall, Target } from './graphics'
+import { Vertex } from './batch'
+import { UniformInfo, UniformType, ShaderType } from './graphics'
+import { VertexType, VertexFormat } from './graphics'
+import { TextureSampler, TextureFilter, TextureWrap, TextureFormat } from './graphics'
+import { Mesh, Shader, Texture, DrawCall, Target } from './graphics'
 import { App } from './app'
 import { Log } from './common'
 import default_vertex_shader from './default.vert'
@@ -10,22 +14,236 @@ export type ShaderData = [string, string]
 const webgl_batch_shader_data: ShaderData = [default_vertex_shader, default_fragment_shader]
 
 export class WebGL_Shader extends Shader {
-  m_id!: number
-
+  m_id!: WebGLProgram
   get gl_id() { return this.m_id } 
 
-  constructor(readonly data: ShaderData) { super() }
+  m_uniforms: Array<UniformInfo> = []
+  uniform_locations: Array<WebGLUniformLocation> = []
+
+  get uniforms() {
+    return this.m_uniforms
+  }
+
+
+  constructor(readonly data: ShaderData) { 
+    super() 
+  
+    let vertex_shader = App.renderer.gl.createShader(App.renderer.gl.VERTEX_SHADER)!
+    {
+      App.renderer.gl.shaderSource(vertex_shader, data[0])
+      App.renderer.gl.compileShader(vertex_shader)
+      let log = App.renderer.gl.getShaderInfoLog(vertex_shader)
+
+      if (log) {
+        Log.error(log)
+        return
+      }
+    }
+
+
+    let fragment_shader = App.renderer.gl.createShader(App.renderer.gl.FRAGMENT_SHADER)!
+    {
+      App.renderer.gl.shaderSource(fragment_shader, data[1])
+      App.renderer.gl.compileShader(fragment_shader)
+      let log = App.renderer.gl.getShaderInfoLog(fragment_shader)
+
+      if (log && log.length > 0) {
+        Log.error(log)
+        return
+      }
+    }
+
+    let id = App.renderer.gl.createProgram()!
+    App.renderer.gl.attachShader(id, vertex_shader)
+    App.renderer.gl.attachShader(id, fragment_shader)
+    App.renderer.gl.linkProgram(id)
+    let log = App.renderer.gl.getProgramInfoLog(id)
+    App.renderer.gl.deleteShader(vertex_shader)
+    App.renderer.gl.deleteShader(fragment_shader)
+
+    if (log && log.length > 0) {
+      Log.error(log)
+      return
+    }
+
+
+    let valid_uniforms = true
+    {
+
+      let active_uniforms = App.renderer.gl.getProgramParameter(id, App.renderer.gl.ACTIVE_UNIFORMS)
+
+      for (let i = 0; i < active_uniforms; i++) {
+        let {
+          name,
+          type,
+          size
+        } = App.renderer.gl.getActiveUniform(id, i)!
+
+
+        if (type === App.renderer.gl.SAMPLER_2D) {
+
+        } else {
+          let uniform_type = UniformType.None
+
+          if (type === App.renderer.gl.FLOAT) {
+            uniform_type = UniformType.Float
+          } else if (type === App.renderer.gl.FLOAT_VEC2) {
+            uniform_type = UniformType.Float2
+          } else if (type === App.renderer.gl.FLOAT_VEC3) {
+            uniform_type = UniformType.Float3
+          } else if (type === App.renderer.gl.FLOAT_VEC4) {
+            uniform_type = UniformType.Float4
+          } else if (type === App.renderer.gl.FLOAT_MAT3x2) {
+            uniform_type = UniformType.Mat3x2
+          } else if (type === App.renderer.gl.FLOAT_MAT4) {
+            uniform_type = UniformType.Mat4x4
+          } else {
+            valid_uniforms = false
+            Log.error(`Unsupported uniform type`)
+            break
+          }
+
+
+          let uniform = new UniformInfo(name,
+                                        uniform_type,
+          ShaderType.Both,
+          0,
+          0,
+          size)
+
+          this.uniform_locations.push(App.renderer.gl.getUniformLocation(id, name)!)
+          this.m_uniforms.push(uniform)
+        }
+      }
+    }
+
+    this.m_id = id
+  }
+
+
+
 }
 
 export class WebGL_Mesh extends Mesh {
+
   m_id!: number
   m_index_format!: number
+
+  m_vertex_buffer!: WebGLBuffer
+  m_instance_buffer!: WebGLBuffer
+  m_index_buffer!: WebGLBuffer
+
+  m_index_count!: number
+  m_vertex_count!: number
+  m_instance_count!: number
+  m_vertex_size!: number
+  m_instance_size!: number
   m_index_size!: number
 
   get gl_id() { return this.m_id }
 
   get gl_index_format() { return this.m_index_format }
   get gl_index_size() { return this.m_index_size } 
+
+
+  vertex_data(format: VertexFormat, vertices: Array<Vertex>) {
+
+    let _vertices = new Float32Array(vertices.flatMap(_ => _.float32_data))
+
+    this.m_vertex_count = _vertices.length
+
+    App.renderer.gl.bindVertexArray(this.m_id)
+
+    {
+      if (!this.m_vertex_buffer) {
+        this.m_vertex_buffer = App.renderer.gl.createBuffer()!
+      }
+
+      this.m_vertex_size = this.gl_mesh_assign_attributes(this.m_vertex_buffer, App.renderer.gl.ARRAY_BUFFER, format, 0)
+
+      App.renderer.gl.bindBuffer(App.renderer.gl.ARRAY_BUFFER, this.m_vertex_buffer)
+      App.renderer.gl.bufferData(App.renderer.gl.ARRAY_BUFFER, _vertices, App.renderer.gl.DYNAMIC_DRAW)
+    }
+
+    App.renderer.gl.bindVertexArray(null)
+
+  }
+
+  index_data(indices: Array<number>) {
+
+    let _indices = new Uint32Array(indices)
+
+    this.m_index_count = _indices.length
+
+    App.renderer.gl.bindVertexArray(this.m_id)
+
+    {
+      if (!this.m_index_buffer) {
+        this.m_index_buffer = App.renderer.gl.createBuffer()!
+      }
+
+      this.m_index_format = App.renderer.gl.UNSIGNED_INT
+      this.m_index_size = 4
+
+      App.renderer.gl.bindBuffer(App.renderer.gl.ELEMENT_ARRAY_BUFFER, this.m_index_buffer)
+      App.renderer.gl.bufferData(App.renderer.gl.ELEMENT_ARRAY_BUFFER, this.m_index_size * _indices.length, App.renderer.gl.DYNAMIC_DRAW)
+    }
+  }
+
+
+  gl_mesh_assign_attributes(buffer: WebGLBuffer, buffer_type: GLenum, format: VertexFormat, divisor: GLint) {
+    App.renderer.gl.bindBuffer(buffer_type, buffer)
+
+    let ptr = 0
+    format.attributes.forEach(attribute => {
+
+      let type = App.renderer.gl.UNSIGNED_BYTE
+      let component_size = 0
+      let components = 1
+
+      if (attribute.type === VertexType.Float) {
+        type = App.renderer.gl.FLOAT
+        component_size = 4
+        components = 1
+      }
+
+      if (attribute.type === VertexType.Float2) {
+        type = App.renderer.gl.FLOAT
+        component_size = 4
+        components = 2
+      }
+
+      if (attribute.type === VertexType.Float3) {
+        type = App.renderer.gl.FLOAT
+        component_size = 4
+        components = 3
+      }
+
+
+      if (attribute.type === VertexType.Float4) {
+        type = App.renderer.gl.FLOAT
+        component_size = 4
+        components = 4
+      }
+
+
+      if (attribute.type === VertexType.UByte4) {
+        type = App.renderer.gl.UNSIGNED_BYTE
+        component_size = 1
+        components = 4
+      }
+
+
+      let location = attribute.index
+      App.renderer.gl.enableVertexAttribArray(location)
+      App.renderer.gl.vertexAttribPointer(location, components, type, attribute.normalized, format.stride, ptr)
+      App.renderer.gl.vertexAttribDivisor(location, divisor)
+
+      ptr += components * component_size
+    })
+    return format.stride
+  }
+
 }
 
 export class WebGL_Target extends Target {
@@ -167,6 +385,10 @@ export class Renderer {
     return new WebGL_Texture(width, height, format)
   }
 
+  create_mesh() {
+    return new WebGL_Mesh()
+  }
+
   update() {
   }
 
@@ -293,7 +515,7 @@ export class Renderer {
     }
 
 
-    this.gl.bindVertexArray(0)
+    this.gl.bindVertexArray(null)
   }
 
   clear_backbuffer(color: Color, depth: number, stencil: number, framebuffer_id: WebGLFramebuffer| null = null) {

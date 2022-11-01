@@ -1,8 +1,70 @@
 import { ShaderData } from './renderer'
 import { Color } from './color'
-import { Vec2, Rect } from './spatial'
+import { Mat4x4, Vec2, Rect } from './spatial'
 import { App } from './app'
 import { Log } from './common'
+import { Vertex } from './batch'
+
+export type TextureRef = Texture | undefined
+
+export enum UniformType {
+  None,
+  Float,
+  Float2,
+  Float3,
+  Float4,
+  Mat3x2,
+  Mat4x4,
+  Texture2D,
+  Sampler2D
+}
+
+export enum ShaderType {
+  None,
+  Vertex,
+  Fragment,
+  Both
+}
+
+export class UniformInfo {
+  constructor(
+    readonly name: string,
+    readonly type: UniformType,
+    readonly shader: ShaderType,
+    readonly register_index: number = 0,
+    readonly buffer_index: number = 0,
+    readonly array_length: number = 0) {}
+}
+
+export class VertexFormat {
+  stride: number = 0
+
+  constructor(readonly attributes: Array<VertexAttribute>) {}
+}
+
+export class VertexAttribute {
+  static make = (index: number, type: VertexType, normalized: boolean) => {
+    let res = new VertexAttribute()
+    res.index = index
+    res.type = type
+    res.normalized = normalized
+    return res
+  }
+
+  index: number = 0
+  type: VertexType = VertexType.None
+
+  normalized: boolean = false
+}
+
+export enum VertexType {
+  None,
+  Float,
+  Float2,
+  Float3,
+  Float4,
+  UByte4
+}
 
 export enum TextureFormat {
   None,
@@ -69,12 +131,23 @@ export abstract class Target {
     return this.textures[0].height
   }
 
+  texture(index: number) {
+    return this.textures[index]
+  }
+
   abstract textures: Attachments
   abstract clear(color: Color, depth?: number, stencil?: number): void
 
 }
 
 export abstract class Mesh {
+
+  static create = () => App.renderer.create_mesh()
+
+
+  abstract index_data(indices: Array<number>): void
+  abstract vertex_data(format: VertexFormat, vertices: Array<Vertex>): void
+
   instance_count!: number
   index_count!: number
 }
@@ -91,18 +164,50 @@ export abstract class Shader {
     return shader
   }
 
+  abstract uniforms: Array<UniformInfo>
 }
 
 export class Material {
 
-  shader!: Shader
+  static create = (shader: Shader) => new Material(shader)
+
+  m_shader: Shader
+
+  get shader() {
+    return this.m_shader
+  }
+
+  constructor(shader: Shader) {
+    this.m_shader = shader
+  }
+
+
+  set_sampler_at_location(location: number, sampler: TextureSampler) {
+  }
+
+  set_texture_at_location(location: number, texture: TextureRef) {
+
+  }
+
+  set_texture(name: string, texture: TextureRef) {
+  }
+
+  set_sampler(name: string, sampler: TextureSampler) {
+  }
+
+  set_matrix(name: string, mat: Mat4x4) {
+  }
+
+  has_value(name: string) {
+    return !!this.m_shader.uniforms.find(_ => _.name === name)
+  }
 }
 
 export class DrawCall {
 
   target: Target = App.backbuffer
   mesh!: Mesh
-  material: Material = new Material()
+  material!: Material
   has_viewport: boolean = false
   has_scissor: boolean = false
   viewport: Rect = Rect.make()
