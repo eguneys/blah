@@ -4,9 +4,10 @@
   "version": "0.0.0",
   "type": "module",
   "exports": "./dist/blah.js",
+  "types": "./dist/index.d.ts",
   "scripts": {
     "dev": "vite --port=3000",
-    "build": "vite build",
+    "build": "vite build && tsc --emitDeclarationOnly",
     "lint": "tsc --noEmit --watch"
   },
   "devDependencies": {
