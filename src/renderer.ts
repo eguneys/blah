@@ -416,9 +416,7 @@ export class WebGL_Texture extends Texture {
       this.m_gl_format = App.renderer.gl.RGBA
       this.m_gl_type = App.renderer.gl.UNSIGNED_BYTE
     } else {
-      if (__IS_DEV__) {
-        Log.error(`Unsupported Texture format ${format}`)
-      }
+      Log.error(`Unsupported Texture format ${format}`)
     }
 
 
@@ -470,9 +468,7 @@ export class Renderer {
     let context = App.platform.gl_context_create()
 
     if (context === null) {
-      if (__IS_DEV__) {
-        Log.error("Failed to create WebGL Context")
-      }
+      Log.error("Failed to create WebGL Context")
       return false
     }
 

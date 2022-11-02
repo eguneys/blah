@@ -370,17 +370,13 @@ export class DrawCall {
 
     if (!pass.target) {
       pass.target = App.backbuffer
-      if (__IS_DEV__) {
-        Log.warn('Trying to draw with an invalid Target; falling back to back buffer')
-      }
+      Log.warn('Trying to draw with an invalid Target; falling back to back buffer')
     }
 
     let index_count = pass.mesh.index_count
 
     if (pass.index_start + pass.index_count > index_count) {
-      if (__IS_DEV__) {
-        Log.warn(`Trying to draw more indices than exists in the index buffer (${pass.index_start}-${pass.index_start+pass.index_count} / ${index_count}; trimming extra indices`)
-      }
+      Log.warn(`Trying to draw more indices than exists in the index buffer (${pass.index_start}-${pass.index_start+pass.index_count} / ${index_count}; trimming extra indices`)
 
       if (pass.index_start > pass.index_count) {
         return
@@ -392,11 +388,9 @@ export class DrawCall {
 
     let instance_count = pass.mesh.instance_count
     if (pass.instance_count > instance_count) {
-      if (__IS_DEV__) {
         Log.warn(`Trying to draw more instances than exists in the index buffer (${pass.instance_count} / ${instance_count}); trimming extra instances`)
 
         pass.instance_count = instance_count
-      }
     }
 
     let draw_size = Vec2.make(pass.target.width, pass.target.height)
