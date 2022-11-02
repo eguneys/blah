@@ -5,6 +5,14 @@ import { App } from './app'
 import { Log } from './common'
 import { Vertex } from './batch'
 
+const mat_float32_data = (mat: Mat4x4) => {
+  return [
+    mat.m11, mat.m12, mat.m13, mat.m14,
+    mat.m21, mat.m22, mat.m23, mat.m24,
+    mat.m31, mat.m32, mat.m33, mat.m34,
+    mat.m41, mat.m42, mat.m43, mat.m44]
+}
+
 const blah_calc_uniform_size = (uniform: UniformInfo) => {
   let components = 0
   switch(uniform.type) {
@@ -135,6 +143,12 @@ export enum TextureWrap {
 
 export class TextureSampler {
 
+  static make = (filter: TextureFilter = TextureFilter.Linear, wrap_x: TextureWrap = TextureWrap.Repeat, wrap_y: TextureWrap = TextureWrap.Repeat) => {
+    return new TextureSampler(filter, wrap_x, wrap_y)
+  }
+
+  static get get_default() { return new TextureSampler(TextureFilter.Linear, TextureWrap.Repeat, TextureWrap.Repeat) }
+
   constructor(readonly filter: TextureFilter,
               readonly wrap_x: TextureWrap,
               readonly wrap_y: TextureWrap) {}
@@ -145,7 +159,11 @@ export class TextureSampler {
 
 export abstract class Texture {
 
-  static create = (width: number, height: number, format: TextureFormat, data?: ImageData) => {
+  static from_image = (image: HTMLImageElement) => {
+    return Texture.create(image.width, image.height, TextureFormat.RGBA, image)
+  }
+
+  static create = (width: number, height: number, format: TextureFormat, data?: HTMLImageElement | ImageData) => {
     let tex = App.renderer.create_texture(width, height, format)
 
     if (tex && data) {
@@ -158,6 +176,7 @@ export abstract class Texture {
   abstract width: number
   abstract height: number
   abstract set_data(data: ImageData | HTMLImageElement): void
+  abstract is_framebuffer: boolean
 
   constructor() {}
 }
@@ -220,6 +239,9 @@ export class Material {
 
   m_shader: Shader
 
+  m_textures: Array<TextureRef> = []
+  m_samplers: Array<TextureSampler> = []
+
   get shader() {
     return this.m_shader
   }
@@ -256,21 +278,73 @@ export class Material {
   }
 
 
+  get_sampler(name: string, array_index: number = 0) {}
+  get_sampler_at(register_index: number) {
+    return this.m_samplers[register_index]
+  }
+
+  get_texture(name: string, array_index: number = 0) {}
+  get_texture_at(register_index: number) {
+    return this.m_textures[register_index]
+  }
+
   set_sampler_at_location(location: number, sampler: TextureSampler) {
+    this.m_samplers[location] = sampler
   }
 
   set_texture_at_location(location: number, texture: TextureRef) {
-
+    this.m_textures[location] = texture
   }
 
-  set_texture(name: string, texture: TextureRef) {
+  set_texture(name: string, texture: TextureRef, index: number = 0) {
+    let _ = this.m_shader.uniforms.find(uniform => {
+      if (uniform.type === UniformType.Texture2D && uniform.name === name) {
+        return true
+        /*
+        if (uniform.register_index + index < this.m_textures.length) {
+          return true
+        }
+       */
+      }
+      return false
+    })
+    if (_) {
+      this.m_textures[_.register_index + index] = texture
+    }
   }
 
-  set_sampler(name: string, sampler: TextureSampler) {
+  set_sampler(name: string, sampler: TextureSampler, index: number = 0) {
+    let _ = this.m_shader.uniforms.find(uniform => {
+      if (uniform.type === UniformType.Sampler2D && uniform.name === name) {
+        return true
+      }
+      return false
+    })
+    if (_) {
+      this.m_samplers[_.register_index + index] = sampler
+    }
   }
 
   set_matrix(name: string, mat: Mat4x4) {
-    
+    let offset = 0
+    let _ = this.m_shader.uniforms.find(uniform => {
+      if (uniform.type === UniformType.Texture2D ||
+          uniform.type === UniformType.Sampler2D ||
+            uniform.type === UniformType.None) {
+        return false
+      }
+
+      if (uniform.name === name) {
+        this.m_data.set(mat_float32_data(mat), offset)
+        return true
+      }
+      offset += blah_calc_uniform_size(uniform)
+      return false
+    })
+
+    if (!_) {
+      Log.warn(`No uniform ${name} exists`)
+    }
   }
 
   has_value(name: string) {

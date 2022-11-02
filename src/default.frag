@@ -13,6 +13,4 @@ void main(void) {
           v_type.x * color * v_col +
           v_type.y * color.a * v_col +
           v_type.z * v_col;
-
-  o_color = vec4(1.0, 0.0, 0.0, 1.0);
 }

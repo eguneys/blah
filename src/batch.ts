@@ -2,7 +2,7 @@ import { App } from './app'
 import { Rect, Vec2, Mat3x2, Mat4x4 } from './spatial'
 import { Color } from './color'
 import { VertexFormat, VertexAttribute, VertexType } from './graphics'
-import { Mesh, Texture, Target, TextureSampler, Material, DrawCall } from './graphics'
+import { Mesh, Texture, Target, TextureSampler, TextureWrap, TextureFilter, Material, DrawCall } from './graphics'
 import { Subtexture } from './subtexture'
 import { SpriteFont } from './spritefont'
 
@@ -28,8 +28,9 @@ class DrawBatch {
     elements: number = 0
     material?: Material
     texture?: Texture
-    sampler!: TextureSampler
+    sampler: TextureSampler = TextureSampler.get_default
     scissor: Rect = Rect.make(0, 0, -1, -1)
+    flip_vertically: boolean = false
 }
 
 class _Batch {
@@ -52,14 +53,26 @@ class _Batch {
 
 
   integerize: boolean = false
-  default_sampler!: TextureSampler
+  default_sampler: TextureSampler = TextureSampler.get_default
 
   push_matrix(matrix: Mat3x2, absolute: boolean = false) {
+    this.m_matrix_stack.push(this.m_matrix)
+    if (absolute) {
+      this.m_matrix = matrix
+    } else {
+      this.m_matrix = matrix.mul(this.m_matrix)
+    }
   }
 
-  pop_matrix() {}
+  pop_matrix() {
+    let was = this.m_matrix
+    this.m_matrix = this.m_matrix_stack.pop()!
+    return was
+  }
 
-  peek_matrix() {}
+  peek_matrix() {
+    return this.m_matrix
+  }
 
   push_scissor(scissor: Rect) {}
 
@@ -81,9 +94,22 @@ class _Batch {
 
   peek_material() {}
 
-  set_texture(texture: Texture) {}
+  set_texture(texture: Texture) {
+  
+    if (this.m_batch.elements > 0 && texture !== this.m_batch.texture && !!this.m_batch.texture) {
+      this.INSERT_BATCH()
+    }
 
-  set_sampler(sampler: TextureSampler) {}
+    if (this.m_batch.texture !== texture) {
+      this.m_batch.texture = texture
+      this.m_batch.flip_vertically = App.renderer.origin_bottom_left && texture && texture.is_framebuffer
+    }
+  }
+
+  set_sampler(sampler: TextureSampler) {
+  
+    console.log(sampler)
+  }
 
   render(target: Target = App.backbuffer) {
     
@@ -175,6 +201,7 @@ class _Batch {
     this.m_batch.texture = undefined
     this.m_batch.sampler = this.default_sampler
     this.m_batch.scissor.w = this.m_batch.scissor.h = -1
+    this.m_batch.flip_vertically = false
     
     this.m_matrix_stack = []
     this.m_scissor_stack = []
@@ -186,7 +213,16 @@ class _Batch {
 
   line(from: Vec2, to: Vec2, t: number, color: Color) {}
 
-  rect(rect: Rect, color: Color) {}
+  rect(rect: Rect, color: Color) {
+    this.PUSH_QUAD(
+      rect.x, rect.y,
+      rect.x + rect.w, rect.y,
+      rect.x + rect.w, rect.y + rect.h,
+      rect.x, rect.y + rect.h,
+      0, 0, 0, 0, 0, 0, 0, 0,
+      color, color, color, color,
+      0, 0, 255)
+  }
   rect_line(rect: Rect, t: number, color: Color) {}
 
   circle(center: Vec2, radius: number, steps: number, color: Color) {}
@@ -228,6 +264,11 @@ class _Batch {
   str(font: SpriteFont, text: string, pos: Vec2, color: Color) {}
   str_j(font: SpriteFont, text: string, pos: Vec2, justify: Vec2, size: number, color: Color) {}
 
+  INSERT_BATCH() {
+    this.m_batches.push(this.m_batch)
+    this.m_batch.offset += this.m_batch.elements
+    this.m_batch.elements = 0
+  }
 
   PUSH_QUAD(px0: number, py0: number, 
             px1: number, py1: number, 
@@ -248,9 +289,9 @@ class _Batch {
               this.m_indices.push(this.m_vertices.length + 3)
 
               this.MAKE_VERTEX(px0, py0, tx0, ty0, col0, mult, fill, wash)
-              this.MAKE_VERTEX(px1, py1, tx1, ty1, col0, mult, fill, wash)
-              this.MAKE_VERTEX(px2, py2, tx2, ty2, col0, mult, fill, wash)
-              this.MAKE_VERTEX(px3, py3, tx3, ty3, col0, mult, fill, wash)
+              this.MAKE_VERTEX(px1, py1, tx1, ty1, col1, mult, fill, wash)
+              this.MAKE_VERTEX(px2, py2, tx2, ty2, col2, mult, fill, wash)
+              this.MAKE_VERTEX(px3, py3, tx3, ty3, col3, mult, fill, wash)
   }
 
 
@@ -260,7 +301,7 @@ class _Batch {
     this.m_vertices.push(new Vertex(
       Vec2.make(px * mat.m11 + py * mat.m21 + mat.m31,
                 px * mat.m12 + py * mat.m22 + mat.m32),
-      Vec2.make(tx, ty),
+      Vec2.make(tx, this.m_batch.flip_vertically ? 1 - ty : ty),
       c,
       m,
       w,
@@ -273,18 +314,21 @@ export const batch = new _Batch()
 
 export class Vertex {
 
-  get float32_data() {
-
+  push_to(data: DataView, offset: number) {
     let { pos, tex, col, mult, wash, fill } = this
-    
-    return [
-      pos.x,
-      pos.y,
-      tex.x,
-      tex.y,
-      float32_data(col.r, col.g, col.b, col.a),
-      float32_data(mult, wash, fill, 0)
-    ]
+
+    data.setFloat32(offset + 0, pos.x, true)
+    data.setFloat32(offset + 4, pos.y, true)
+    data.setFloat32(offset + 8, tex.x, true)
+    data.setFloat32(offset + 12, tex.y, true)
+    data.setUint8(offset + 16, col.r)
+    data.setUint8(offset + 17, col.g)
+    data.setUint8(offset + 18, col.b)
+    data.setUint8(offset + 19, col.a)
+    data.setUint8(offset + 20, mult)
+    data.setUint8(offset + 21, wash)
+    data.setUint8(offset + 22, fill)
+    return offset + 24
   }
 
   constructor(readonly pos: Vec2,

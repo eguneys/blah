@@ -71,6 +71,7 @@ export class WebGL_Shader extends Shader {
     {
 
       let active_uniforms = App.renderer.gl.getProgramParameter(id, App.renderer.gl.ACTIVE_UNIFORMS)
+      let sampler_uniforms = 0
 
       for (let i = 0; i < active_uniforms; i++) {
         let {
@@ -82,6 +83,28 @@ export class WebGL_Shader extends Shader {
 
         if (type === App.renderer.gl.SAMPLER_2D) {
 
+          let tex_uniform = new UniformInfo(name,
+                                            UniformType.Texture2D,
+          ShaderType.Fragment,
+          sampler_uniforms,
+          0,
+          size)
+          this.uniform_locations.push(App.renderer.gl.getUniformLocation(id, name)!)
+          this.m_uniforms.push(tex_uniform)
+
+
+
+          let sampler_uniform = new UniformInfo(name + '_sampler',
+                                                UniformType.Sampler2D,
+          ShaderType.Fragment,
+          sampler_uniforms,
+          0,
+          size)
+          this.uniform_locations.push(App.renderer.gl.getUniformLocation(id, name)!)
+          this.m_uniforms.push(sampler_uniform)
+
+
+          sampler_uniforms++;
         } else {
           let uniform_type = UniformType.None
 
@@ -165,9 +188,7 @@ export class WebGL_Mesh extends Mesh {
 
   vertex_data(format: VertexFormat, vertices: Array<Vertex>) {
 
-    let _vertices = new Float32Array(vertices.flatMap(_ => _.float32_data))
-
-    this.m_vertex_count = _vertices.length
+    this.m_vertex_count = vertices.length
 
     App.renderer.gl.bindVertexArray(this.m_id)
 
@@ -178,8 +199,13 @@ export class WebGL_Mesh extends Mesh {
 
       this.m_vertex_size = this.gl_mesh_assign_attributes(this.m_vertex_buffer, App.renderer.gl.ARRAY_BUFFER, format, 0)
 
+      let data = new ArrayBuffer(this.m_vertex_size * this.m_vertex_count)
+
+      let view = new DataView(data)
+      vertices.reduce((offset, _) => _.push_to(view, offset), 0)
+
       App.renderer.gl.bindBuffer(App.renderer.gl.ARRAY_BUFFER, this.m_vertex_buffer)
-      App.renderer.gl.bufferData(App.renderer.gl.ARRAY_BUFFER, _vertices, App.renderer.gl.DYNAMIC_DRAW)
+      App.renderer.gl.bufferData(App.renderer.gl.ARRAY_BUFFER, data, App.renderer.gl.DYNAMIC_DRAW)
     }
 
     App.renderer.gl.bindVertexArray(null)
@@ -249,7 +275,6 @@ export class WebGL_Mesh extends Mesh {
         component_size = 1
         components = 4
       }
-
 
       let location = attribute.index
       App.renderer.gl.enableVertexAttribArray(location)
@@ -326,6 +351,10 @@ export class WebGL_Texture extends Texture {
 
   framebuffer_parent: boolean
 
+  get is_framebuffer() {
+    return this.framebuffer_parent
+  }
+
   get width() {
     return this.m_width
   }
@@ -341,6 +370,31 @@ export class WebGL_Texture extends Texture {
                                this.m_width, this.m_height, 0, this.m_gl_format, this.m_gl_type, data)
   }
 
+
+  update_sampler(sampler: TextureSampler) {
+    if (this.m_sampler !== sampler) {
+      this.m_sampler = sampler
+
+      App.renderer.gl.bindTexture(App.renderer.gl.TEXTURE_2D, this.m_id)
+      App.renderer.gl.texParameteri(App.renderer.gl.TEXTURE_2D, 
+                                    App.renderer.gl.TEXTURE_MIN_FILTER, 
+                                    this.m_sampler.filter === TextureFilter.Nearest ? 
+                                      App.renderer.gl.NEAREST : App.renderer.gl.LINEAR)
+      App.renderer.gl.texParameteri(App.renderer.gl.TEXTURE_2D, 
+                                    App.renderer.gl.TEXTURE_MAG_FILTER, 
+                                    this.m_sampler.filter === TextureFilter.Nearest ? 
+                                      App.renderer.gl.NEAREST : App.renderer.gl.LINEAR)
+      App.renderer.gl.texParameteri(App.renderer.gl.TEXTURE_2D, 
+                                    App.renderer.gl.TEXTURE_WRAP_S, 
+                                    this.m_sampler.wrap_x === TextureWrap.Clamp ? 
+                                      App.renderer.gl.CLAMP_TO_EDGE : App.renderer.gl.REPEAT)
+      App.renderer.gl.texParameteri(App.renderer.gl.TEXTURE_2D, 
+                                    App.renderer.gl.TEXTURE_WRAP_T, 
+                                    this.m_sampler.wrap_y === TextureWrap.Clamp ? 
+                                      App.renderer.gl.CLAMP_TO_EDGE : App.renderer.gl.REPEAT)
+
+    }
+  }
   
 
   constructor(width: number, height: number, format: TextureFormat) {
@@ -383,6 +437,8 @@ export class Renderer {
   static try_make_renderer = () => {
     return new Renderer()
   }
+
+  origin_bottom_left = true
 
   get get_draw_size() { return undefined }
 
@@ -451,7 +507,7 @@ export class Renderer {
     this.gl.useProgram(shader.gl_id)
 
     let texture_slot = 0
-    let texture_ids = []
+    let texture_ids: Array<number> = []
     let uniforms = shader.uniforms
     let data = pass.material.data
     let i_data = 0
@@ -464,7 +520,24 @@ export class Renderer {
       }
 
       if (uniform.type === UniformType.Texture2D) {
+        for (let n = 0; n < uniform.array_length; n++) {
+          let tex = pass.material.get_texture_at(texture_slot) as WebGL_Texture
+          let sampler = pass.material.get_sampler_at(texture_slot)
 
+          App.renderer.gl.activeTexture(App.renderer.gl.TEXTURE0 + texture_slot)
+
+          if (!tex) {
+            App.renderer.gl.bindTexture(App.renderer.gl.TEXTURE_2D, null)
+          } else {
+            tex.update_sampler(sampler)
+            App.renderer.gl.bindTexture(App.renderer.gl.TEXTURE_2D, tex.gl_id)
+          }
+
+          texture_ids[n] = texture_slot
+          texture_slot++
+        }
+
+          App.renderer.gl.uniform1iv(location, texture_ids)
       }
 
       if (uniform.type === UniformType.Float) {
@@ -480,10 +553,10 @@ export class Renderer {
         App.renderer.gl.uniform4fv(location, data.slice(i_data, i_data + 4 * uniform.array_length))
         i_data += 4 * uniform.array_length
       } else if (uniform.type === UniformType.Mat3x2) {
-        App.renderer.gl.uniformMatrix3fv(location, data.slice(i_data, i_data + 9 * uniform.array_length))
+        App.renderer.gl.uniformMatrix3fv(location, false, data.slice(i_data, i_data + 9 * uniform.array_length))
         i_data += 9 * uniform.array_length
       } else if (uniform.type === UniformType.Mat4x4) {
-        App.renderer.gl.uniformMatrix4fv(location, data.slice(i_data, i_data + 16 * uniform.array_length))
+        App.renderer.gl.uniformMatrix4fv(location, false, data.slice(i_data, i_data + 16 * uniform.array_length))
         i_data += 16 * uniform.array_length
       }
 
