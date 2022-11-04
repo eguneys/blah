@@ -33,7 +33,7 @@ class DrawBatch {
     flip_vertically: boolean = false
 }
 
-class _Batch {
+export class Batch {
 
   m_default_material!: Material
   m_mesh?: Mesh
@@ -223,7 +223,48 @@ class _Batch {
       color, color, color, color,
       0, 0, 255)
   }
-  rect_line(rect: Rect, t: number, color: Color) {}
+
+  rect_line(rect: Rect, t: number, color: Color) {
+    if (t >= rect.w || t >= rect.h) {
+      this.rect(rect, color)
+    } else {
+      this.PUSH_QUAD(
+        rect.x, rect.y,
+        rect.x + rect.w - t, rect.y,
+        rect.x + rect.w - t, rect.y + t,
+        rect.x, rect.y + t,
+        0, 0, 0, 0, 0, 0, 0, 0,
+        color, color, color, color,
+        0, 0, 255)
+
+      this.PUSH_QUAD(
+        rect.x + rect.w - t, rect.y,
+        rect.x + rect.w, rect.y,
+        rect.x + rect.w, rect.y + rect.h - t,
+        rect.x + rect.w - t, rect.y + rect.h - t,
+        0, 0, 0, 0, 0, 0, 0, 0,
+        color, color, color, color,
+        0, 0, 255)
+
+      this.PUSH_QUAD(
+        rect.x + t, rect.y + rect.h - t,
+        rect.x + rect.w, rect.y + rect.h - t,
+        rect.x + rect.w, rect.y + rect.h,
+        rect.x, rect.y + rect.h,
+        0, 0, 0, 0, 0, 0, 0, 0,
+        color, color, color, color,
+        0, 0, 255)
+
+      this.PUSH_QUAD(
+        rect.x, rect.y + t,
+        rect.x + t, rect.y + t,
+        rect.x + t, rect.y + rect.h - t,
+        rect.x, rect.y + rect.h,
+        0, 0, 0, 0, 0, 0, 0, 0,
+        color, color, color, color,
+        0, 0, 255)
+    }
+  }
 
   circle(center: Vec2, radius: number, steps: number, color: Color) {}
   circle_line(center: Vec2, radius: number, t: number, steps: number, color: Color) {}
@@ -310,7 +351,7 @@ class _Batch {
 }
 
 
-export const batch = new _Batch()
+export const batch = new Batch()
 
 export class Vertex {
 
