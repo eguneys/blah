@@ -9,6 +9,11 @@ export class Color {
   static black = new Color(0, 0, 0, 255)
   static red = new Color(255, 0, 0, 255)
 
+
+  get rgb() {
+    return (this.r << 16) | (this.g << 8) | this.b
+  }
+
   constructor(
     readonly r: number, 
     readonly g: number, 
