@@ -31,6 +31,20 @@ class DrawBatch {
     sampler: TextureSampler = TextureSampler.get_default
     scissor: Rect = Rect.make(0, 0, -1, -1)
     flip_vertically: boolean = false
+
+
+    get clone() {
+      let res = new DrawBatch()
+      res.layer = this.layer
+      res.offset = this.offset
+      res.elements = this.elements
+      res.material = this.material
+      res.texture = this.texture
+      res.sampler = this.sampler
+      res.scissor = this.scissor
+      res.flip_vertically = this.flip_vertically
+      return res
+    }
 }
 
 export class Batch {
@@ -96,7 +110,7 @@ export class Batch {
 
   set_texture(texture: Texture) {
   
-    if (this.m_batch.elements > 0 && texture !== this.m_batch.texture && !!this.m_batch.texture) {
+    if (this.m_batch.elements > 0 && texture !== this.m_batch.texture) { // && !!this.m_batch.texture) {
       this.INSERT_BATCH()
     }
 
@@ -144,7 +158,11 @@ export class Batch {
     pass.viewport = Rect.make(0, 0, 0, 0)
     pass.instance_count = 0
 
-    this.m_batches.forEach(batch => {
+    this.m_batches.forEach((batch, i) => {
+      if (this.m_batch_insert === i && this.m_batch.elements > 0) {
+        this.render_single_batch(pass, this.m_batch, matrix)
+      }
+      this.render_single_batch(pass, batch, matrix)
     })
 
 
@@ -321,7 +339,7 @@ export class Batch {
   str_j(font: SpriteFont, text: string, pos: Vec2, justify: Vec2, size: number, color: Color) {}
 
   INSERT_BATCH() {
-    this.m_batches.push(this.m_batch)
+    this.m_batches.push(this.m_batch.clone)
     this.m_batch.offset += this.m_batch.elements
     this.m_batch.elements = 0
   }
