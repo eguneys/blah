@@ -5,6 +5,7 @@ import { UniformInfo, UniformType, ShaderType } from './graphics'
 import { VertexType, VertexFormat } from './graphics'
 import { TextureSampler, TextureFilter, TextureWrap, TextureFormat } from './graphics'
 import { Mesh, Shader, Texture, DrawCall, Target } from './graphics'
+import { BlendOp, BlendFactor } from './graphics'
 import { App } from './app'
 import { Log } from './common'
 import default_vertex_shader from './default.vert'
@@ -562,8 +563,17 @@ export class Renderer {
 
     // blend
     {
+
+      let color_op = gl_get_blend_func(pass.blend.color_op)
+      let alpha_op = gl_get_blend_func(pass.blend.alpha_op)
+      let color_src = gl_get_blend_factor(pass.blend.color_src)
+      let color_dst = gl_get_blend_factor(pass.blend.color_dst)
+      let alpha_src = gl_get_blend_factor(pass.blend.alpha_src)
+      let alpha_dst = gl_get_blend_factor(pass.blend.alpha_dst)
+
       this.gl.enable(this.gl.BLEND)
-    
+      this.gl.blendEquationSeparate(color_op, alpha_op)
+      this.gl.blendFuncSeparate(color_src, color_dst, alpha_src, alpha_dst)
     }
 
     // depth
@@ -651,3 +661,58 @@ export class Renderer {
   after_render() {}
 
 }
+
+
+const gl_get_blend_func = (operation: BlendOp) => {
+  switch (operation) {
+    case BlendOp.Add:
+      return App.renderer.gl.FUNC_ADD
+    case BlendOp.Subtract:
+      return App.renderer.gl.FUNC_SUBTRACT
+    case BlendOp.Min:
+      return App.renderer.gl.MIN
+    case BlendOp.Max:
+      return App.renderer.gl.MAX
+    default:
+      return App.renderer.gl.FUNC_ADD
+  }
+}
+
+
+const gl_get_blend_factor = (factor: BlendFactor) => {
+  switch (factor) {
+    case BlendFactor.Zero:
+      return App.renderer.gl.ZERO
+    case BlendFactor.One:
+      return App.renderer.gl.ONE
+    case BlendFactor.SrcColor:
+      return App.renderer.gl.SRC_COLOR
+    case BlendFactor.OneMinusSrcColor:
+      return App.renderer.gl.ONE_MINUS_SRC_COLOR
+    case BlendFactor.DstColor:
+      return App.renderer.gl.DST_COLOR
+    case BlendFactor.OneMinusDstColor:
+      return App.renderer.gl.ONE_MINUS_DST_COLOR
+    case BlendFactor.SrcAlpha:
+      return App.renderer.gl.SRC_ALPHA
+    case BlendFactor.OneMinusSrcAlpha:
+      return App.renderer.gl.ONE_MINUS_SRC_ALPHA
+    case BlendFactor.DstAlpha:
+      return App.renderer.gl.DST_ALPHA
+    case BlendFactor.OneMinusDstAlpha:
+      return App.renderer.gl.ONE_MINUS_DST_ALPHA
+    case BlendFactor.ConstantColor:
+      return App.renderer.gl.CONSTANT_COLOR
+    case BlendFactor.ConstantAlpha:
+      return App.renderer.gl.CONSTANT_ALPHA
+    case BlendFactor.OneMinusConstantColor:
+      return App.renderer.gl.ONE_MINUS_CONSTANT_COLOR
+    case BlendFactor.OneMinusConstantAlpha:
+      return App.renderer.gl.ONE_MINUS_CONSTANT_ALPHA
+    default:
+      return App.renderer.gl.ZERO
+  }
+}
+
+
+

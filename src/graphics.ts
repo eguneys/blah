@@ -5,6 +5,69 @@ import { App } from './app'
 import { Log } from './common'
 import { Vertex } from './batch'
 
+export enum BlendFactor {
+  Zero,
+  One,
+  SrcColor,
+  OneMinusSrcColor,
+  DstColor,
+  OneMinusDstColor,
+  SrcAlpha,
+  OneMinusSrcAlpha,
+  DstAlpha,
+  OneMinusDstAlpha,
+  ConstantColor,
+  OneMinusConstantColor,
+  ConstantAlpha,
+  OneMinusConstantAlpha
+}
+
+export enum BlendOp {
+  Add,
+  Subtract,
+  Min,
+  Max
+}
+
+export class BlendMode {
+
+  static Normal = new BlendMode(
+    BlendOp.Add,
+    BlendFactor.One,
+    BlendFactor.OneMinusSrcAlpha,
+    BlendOp.Add,
+    BlendFactor.One,
+    BlendFactor.OneMinusSrcAlpha
+  )
+  static NonPremultiplied = new BlendMode(
+    BlendOp.Add,
+    BlendFactor.SrcAlpha,
+    BlendFactor.OneMinusSrcAlpha,
+    BlendOp.Add,
+    BlendFactor.SrcAlpha,
+    BlendFactor.OneMinusSrcAlpha
+
+  )
+  //static Subtract = new BlendMode()
+  static Additive = new BlendMode(
+    BlendOp.Add,
+    BlendFactor.SrcAlpha,
+    BlendFactor.One,
+    BlendOp.Add,
+    BlendFactor.SrcAlpha,
+    BlendFactor.One)
+
+
+  constructor(readonly color_op: BlendOp,
+              readonly color_src: BlendFactor,
+              readonly color_dst: BlendFactor,
+              readonly alpha_op: BlendOp,
+              readonly alpha_src: BlendFactor,
+              readonly alpha_dst: BlendFactor) {}
+
+}
+
+
 const mat_float32_data = (mat: Mat4x4) => {
   return [
     mat.m11, mat.m12, mat.m13, mat.m14,
@@ -364,6 +427,7 @@ export class DrawCall {
   index_start: number = 0
   index_count: number = 0
   instance_count: number = 0
+  blend: BlendMode = BlendMode.Normal
 
   perform() {
     let pass = this
