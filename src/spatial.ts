@@ -48,14 +48,14 @@ export class Vec2 {
   static max = (a: Vec2, b: Vec2) => new Vec2(Math.max(a.x, b.x), Math.max(a.y, b.y))
 
 
-  static unit_x = Vec2.make(1, 0)
-  static unit_y = Vec2.make(0, 1)
-  static right = Vec2.make(1, 0)
-  static up = Vec2.make(0, -1)
-  static down = Vec2.make(0, 1)
-  static left = Vec2.make(-1, 0)
-  static zero = Vec2.make(0, 0)
-  static one = Vec2.make(1, 1)
+  static get unit_x() { return Vec2.make(1, 0) }
+  static get unit_y() { return Vec2.make(0, 1) }
+  static get right() { return Vec2.make(1, 0) }
+  static get up() { return Vec2.make(0, -1) }
+  static get down() { return Vec2.make(0, 1) }
+  static get left() { return Vec2.make(-1, 0) }
+  static get zero() { return Vec2.make(0, 0) }
+  static get one() { return Vec2.make(1, 1) }
 
 
   add(v: Vec2) {

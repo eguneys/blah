@@ -294,7 +294,22 @@ export class Batch {
   }
 
 
-  stex(subtexture: Subtexture, position: Vec2 = Vec2.zero, color: Color = Color.white) {
+  stex(sub: Subtexture, pos: Vec2 = Vec2.zero, color: Color = Color.white) {
+
+    let { m_tex_mult, m_tex_wash } = this
+
+    this.set_texture(sub.texture)
+    this.PUSH_QUAD(
+      pos.x + sub.draw_coords[0].x, pos.y + sub.draw_coords[0].y,
+      pos.x + sub.draw_coords[1].x, pos.y + sub.draw_coords[1].y,
+      pos.x + sub.draw_coords[2].x, pos.y + sub.draw_coords[2].y,
+      pos.x + sub.draw_coords[3].x, pos.y + sub.draw_coords[3].y,
+      sub.tex_coords[0].x, sub.tex_coords[0].y,
+      sub.tex_coords[1].x, sub.tex_coords[1].y,
+      sub.tex_coords[2].x, sub.tex_coords[2].y,
+      sub.tex_coords[3].x, sub.tex_coords[3].y,
+      color, color, color, color,
+      m_tex_mult, m_tex_wash, 0)
   }
   stex_o(subtexture: Subtexture, position: Vec2, origin: Vec2, scale: Vec2, rotation: number, color: Color) {
   }

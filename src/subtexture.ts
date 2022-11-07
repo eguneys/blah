@@ -20,6 +20,8 @@ export class Subtexture {
               readonly frame: Rect) {
                 this.draw_coords = [Vec2.zero, Vec2.zero, Vec2.zero, Vec2.zero]
                 this.tex_coords = [Vec2.zero, Vec2.zero, Vec2.zero, Vec2.zero]
+
+                this.update()
               }
 
   update() {
