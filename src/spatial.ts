@@ -70,6 +70,10 @@ export class Vec2 {
     return new Vec2(this.x * v.x, this.y * v.y)
   }
 
+  div(v: Vec2) {
+    return new Vec2(this.x / v.x, this.y / v.y)
+  }
+
   scale(n: number) {
     return new Vec2(this.x * n, this.y * n)
   }
@@ -105,6 +109,10 @@ export class Vec2 {
 
   equals(v: Vec2) {
     return Math.abs(this.x - v.x) < epsilon && Math.abs(this.y - v.y) < epsilon
+  }
+
+  distance(v: Vec2) {
+    return this.sub(v).length
   }
 
   get negate() {
