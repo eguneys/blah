@@ -335,8 +335,57 @@ export class Batch {
   }
 
 
-  str(font: SpriteFont, text: string, pos: Vec2, color: Color) {}
-  str_j(font: SpriteFont, text: string, pos: Vec2, justify: Vec2, size: number, color: Color) {}
+  str(font: SpriteFont, text: string, pos: Vec2, color: Color) {
+    this.str_j(font, text, pos, Vec2.zero, font.size, color)
+  }
+  str_j(font: SpriteFont, text: string, pos: Vec2, justify: Vec2, size: number, color: Color) {
+  
+    this.push_matrix(
+      Mat3x2.create_scale(size / font.size).mul(Mat3x2.create_translation(pos)))
+
+
+    let offset: Vec2 = Vec2.make(0, font.ascent + font.descent)
+    if (justify.x !== 0) {
+      offset.x -= font.width_of_line(text) * justify.x
+    }
+    if (justify.y !== 0) {
+      offset.y -= font.height_of(text) * justify.y
+    }
+
+    let last = 0
+    let i = 0
+
+    for (let char of text) {
+
+      if (char === '\n') {
+        offset.x = 0
+        offset.y += font.line_height
+
+        if (justify.x !== 0) {
+          offset.x -= font.width_of_line(text, i + 1) * justify.x
+        }
+
+        last = 0
+      } else {
+        let ch = font.get_character(char.charCodeAt(0))
+        if (ch.subtexture.texture) {
+          let at = offset.add(ch.offset)
+          if (last) {
+            at.x += font.get_kerning(last, char.charCodeAt(0))
+          }
+          this.stex(ch.subtexture, at, color)
+        }
+
+        offset.x += ch.advance
+        last = char.charCodeAt(0)
+      }
+
+      i++;
+    }
+
+
+    this.pop_matrix()
+  }
 
   INSERT_BATCH() {
     this.m_batches.push(this.m_batch.clone)
