@@ -3,6 +3,13 @@ import { Rect, Mat3x2, Vec2 } from './'
 import { Color, App, batch, Target, Texture } from './'
 import { TextureSampler, TextureFilter } from './'
 
+import { SpriteFont } from './spritefont'
+import { Font } from './font2'
+import font_json from '../assets/out_0.json'
+import font_atlas_png from '../assets/out_0.png'
+
+
+
 function load_image(path: string): Promise<HTMLImageElement> {
   return new Promise(resolve => {
     let res = new Image()
@@ -19,7 +26,22 @@ class Game {
   buffer!: Target
   image?: Texture
 
+  sp_font?: SpriteFont
+
   init() {
+
+
+    load_image(font_atlas_png)
+    .then(atlas => {
+      let texture = Texture.from_image(atlas)
+
+
+      let f = Font.make(font_json, texture)
+
+      this.sp_font = SpriteFont.make(f, 64)
+
+
+    })
 
     load_image(sprites_png)
     .then(image => 
@@ -41,6 +63,17 @@ class Game {
       if (this.image) {
         batch.tex(this.image)
       }
+
+
+      if (this.sp_font) {
+
+        batch.str_j(this.sp_font, "okk@#$", Vec2.make(0, 100), Vec2.zero, 32, Color.white)
+        let w = this.sp_font.width_of("okk@#$") / 2
+
+        batch.str(this.sp_font, "ok", Vec2.make(w, 100), Color.white)
+      }
+
+
       batch.rect(Rect.make(0, 0, 10, 10), Color.hex(0xff0000))
 
       batch.render(this.buffer)

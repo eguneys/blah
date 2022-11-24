@@ -1,9 +1,8 @@
 import { Rect, Vec2 } from './spatial'
 import { Texture } from './graphics'
 import { Subtexture } from './subtexture'
-import { Font } from './font'
-
-export type Codepoint = number
+import { Font } from './font2'
+import { Codepoint, CharSet, CharRange, Kerning } from './font2'
 
 export type Character = {
   codepoint: Codepoint,
@@ -14,24 +13,17 @@ export type Character = {
 }
 
 
-export type CharSet = Array<CharRange>
-
-export type CharRange = {
-  from: Codepoint,
-  to: Codepoint
-}
-
-
-export type Kerning = {
-  a: Codepoint,
-  b: Codepoint,
-  value: number
-}
-
-
 export class SpriteFont {
 
   static make = (font: Font, size: number) => {
+
+
+    let charset = [{from: 32, to: 127}, { from: 161, to: 255 }]
+    let res = new SpriteFont()
+
+    res.rebuild(font, size, charset)
+
+    return res
 
   }
 
@@ -122,12 +114,10 @@ export class SpriteFont {
   rebuild(font: Font, size: number, charset: CharSet) {
     this.clear()
 
-    let scale = font.get_scale(size)
-
     this.name = font.family_name
-    this.ascent = font.ascent * scale
-    this.descent = font.descent * scale
-    this.line_gap = font.line_gap * scale
+    this.ascent = font.ascent
+    this.descent = font.descent
+    this.line_gap = font.line_gap
     this.size = size
 
     for (let range of charset) {
@@ -137,15 +127,15 @@ export class SpriteFont {
       for (let i = from; i <= to; i++) {
 
         let glyph = font.get_glyph(i)
-        if (glyph <= 0) {
+        if (glyph === undefined) {
           continue
         }
 
 
-        let ch = font.get_character(glyph, scale)
+        let ch = font.get_character(glyph)
 
 
-        let subtexture = font.get_subtexture(i)
+        let subtexture = font.get_subtexture(ch.glyph)
 
         let sfch = {
           glyph,
@@ -156,21 +146,17 @@ export class SpriteFont {
         }
 
         this._characters.push(sfch)
-
-        for (let a of this._characters) {
-          for (let b of this._characters) {
-            let kerning_value = font.get_kerning(a.glyph, b.glyph, scale)
-            if (kerning_value !== 0) {
-              this.set_kerning(a.codepoint, b.codepoint, kerning_value)
-            }
-          }
-        }
-
       }
-
-
     }
 
+    for (let a of this._characters) {
+      for (let b of this._characters) {
+        let kerning_value = font.get_kerning(a.glyph, b.glyph)
+        if (kerning_value !== undefined) {
+          this.set_kerning(a.codepoint, b.codepoint, kerning_value)
+        }
+      }
+    }
   }
 
   get_kerning(a: Codepoint, b: Codepoint) {
@@ -210,7 +196,7 @@ function find_character_index(items: Array<Character>, codepoint: Codepoint) {
   let higher = items.length - 1
 
   while (lower <= higher) {
-    let mid = (higher + lower) / 2
+    let mid = Math.round((higher + lower) / 2)
     if (items[mid].codepoint === codepoint) {
       return mid
     }
@@ -227,7 +213,7 @@ function find_kerning_index(items: Array<Kerning>, a: Codepoint, b: Codepoint) {
   let lower = 0
   let higher = items.length - 1
   while (lower <= higher) {
-    let mid = (higher + lower) / 2
+    let mid = Math.round((higher + lower) / 2)
 
     if (items[mid].a === a && items[mid].b === b) {
       return mid

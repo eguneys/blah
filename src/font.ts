@@ -1,3 +1,6 @@
+
+export default {};
+/*
 import { Rect } from './spatial'
 import { Texture } from './graphics'
 import { Subtexture } from './subtexture'
@@ -141,7 +144,7 @@ export class FontJsonExport {
   }
 
   static getglyphkernadvance = (json: FontJsonExport, glyph1: number, glyph2: number) => {
-    return 0
+    return json.getglyphkernadvance
   }
 
   static getglyphHMetrics = (json: FontJsonExport, glyph: number) => {
@@ -160,6 +163,7 @@ export class FontJsonExport {
     return json.subtextures[codepoint]
   }
 
+  getglyphkernadvance!: number
   scaleformappingemtopixels!: number
   subtextures!: Array<{ frame: XYWH, packed: XYWH }>
   atlas!: Texture
@@ -167,3 +171,4 @@ export class FontJsonExport {
 }
 
 type XYWH = { x: number, y: number, w: number, h: number }
+*/
