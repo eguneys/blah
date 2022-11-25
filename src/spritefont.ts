@@ -1,7 +1,7 @@
 import { Rect, Vec2 } from './spatial'
 import { Texture } from './graphics'
 import { Subtexture } from './subtexture'
-import { Font } from './font2'
+import { Font, FontJson } from './font2'
 import { Codepoint, CharSet, CharRange, Kerning } from './font2'
 
 export type Character = {
@@ -15,7 +15,17 @@ export type Character = {
 
 export class SpriteFont {
 
-  static make = (font: Font, size: number) => {
+
+  static make = (font_json: FontJson, atlas: HTMLImageElement) => {
+    let texture = Texture.from_image(atlas)
+
+
+    let f = Font.make(font_json, texture)
+
+    return SpriteFont.make_from_font(f, 64 + 16)
+  }
+
+  static make_from_font = (font: Font, size: number) => {
 
 
     let charset = [{from: 32, to: 127}, { from: 161, to: 255 }]

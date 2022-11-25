@@ -38,7 +38,7 @@ class Game {
 
       let f = Font.make(font_json, texture)
 
-      this.sp_font = SpriteFont.make(f, 64)
+      this.sp_font = SpriteFont.make_from_font(f, 64)
 
 
     })

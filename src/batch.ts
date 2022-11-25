@@ -159,14 +159,16 @@ export class Batch {
     pass.instance_count = 0
 
     this.m_batches.forEach((batch, i) => {
+      /*
       if (this.m_batch_insert === i && this.m_batch.elements > 0) {
         this.render_single_batch(pass, this.m_batch, matrix)
       }
+     */
       this.render_single_batch(pass, batch, matrix)
     })
 
 
-    if (this.m_batch_insert === this.m_batches.length && this.m_batch.elements > 0) {
+    if (/*this.m_batch_insert === this.m_batches.length &&*/ this.m_batch.elements > 0) {
       this.render_single_batch(pass, this.m_batch, matrix)
     }
   }
