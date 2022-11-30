@@ -404,7 +404,7 @@ export class Batch {
             tx2: number, ty2: number, 
             tx3: number, ty3: number, 
             col0: Color, col1: Color, col2: Color, col3: Color, 
-            mult: number, fill: number, wash: number) {
+            mult: number, wash: number, fill: number) {
               this.m_batch.elements += 2
               this.m_indices.push(this.m_vertices.length + 0)
               this.m_indices.push(this.m_vertices.length + 1)

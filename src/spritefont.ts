@@ -22,7 +22,7 @@ export class SpriteFont {
 
     let f = Font.make(font_json, texture)
 
-    return SpriteFont.make_from_font(f, 64 + 16)
+    return SpriteFont.make_from_font(f, font_json.size)
   }
 
   static make_from_font = (font: Font, size: number) => {

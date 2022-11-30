@@ -74,7 +74,8 @@ export type FontJson = {
   meta: FontJsonMeta,
   chars: Array<FontJsonChar>,
   glyphs: Array<FontJsonGlyph>,
-  colors: Array<FontJsonColor>
+  colors: Array<FontJsonColor>,
+  size: number
 }
 
 
