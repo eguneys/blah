@@ -88,9 +88,23 @@ export class Batch {
     return this.m_matrix
   }
 
-  push_scissor(scissor: Rect) {}
+  push_scissor(scissor: Rect) {
+    this.m_scissor_stack.push(this.m_batch.scissor)
+    if (this.m_batch.elements > 0 && scissor !== this.m_batch.scissor) {
+      this.INSERT_BATCH()
+    }
+    this.m_batch.scissor = scissor
+  }
 
-  pop_scissor() {}
+  pop_scissor() {
+    let was = this.m_batch.scissor
+    let scissor = this.m_scissor_stack.pop()
+    if (this.m_batch.elements > 0 && scissor !== this.m_batch.scissor) {
+      this.INSERT_BATCH()
+    }
+    this.m_batch.scissor = scissor ?? Rect.make(0, 0, -1, -1)
+    return was
+  }
 
   peek_scissor() {}
 
@@ -147,8 +161,13 @@ export class Batch {
     }
 
 
+    let vertex_size = format.stride
+    let data = new ArrayBuffer(vertex_size * this.m_vertices.length)
+    let view = new DataView(data)
+    this.m_vertices.reduce((offset, _) => _.push_to(view, offset), 0)
+
     this.m_mesh.index_data(this.m_indices)
-    this.m_mesh.vertex_data(format, this.m_vertices)
+    this.m_mesh.vertex_data(format, data)
 
 
     let pass = new DrawCall()

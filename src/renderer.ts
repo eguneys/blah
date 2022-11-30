@@ -187,9 +187,9 @@ export class WebGL_Mesh extends Mesh {
     this.m_id = App.renderer.gl.createVertexArray()!
   }
 
-  vertex_data(format: VertexFormat, vertices: Array<Vertex>) {
+  vertex_data(format: VertexFormat, data: ArrayBuffer) {
 
-    this.m_vertex_count = vertices.length
+    this.m_vertex_count = data.byteLength
 
     App.renderer.gl.bindVertexArray(this.m_id)
 
@@ -200,10 +200,6 @@ export class WebGL_Mesh extends Mesh {
 
       this.m_vertex_size = this.gl_mesh_assign_attributes(this.m_vertex_buffer, App.renderer.gl.ARRAY_BUFFER, format, 0)
 
-      let data = new ArrayBuffer(this.m_vertex_size * this.m_vertex_count)
-
-      let view = new DataView(data)
-      vertices.reduce((offset, _) => _.push_to(view, offset), 0)
 
       App.renderer.gl.bindBuffer(App.renderer.gl.ARRAY_BUFFER, this.m_vertex_buffer)
       App.renderer.gl.bufferData(App.renderer.gl.ARRAY_BUFFER, data, App.renderer.gl.DYNAMIC_DRAW)

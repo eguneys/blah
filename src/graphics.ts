@@ -278,7 +278,8 @@ export abstract class Mesh {
   abstract instance_count: number
 
   abstract index_data(indices: Array<number>): void
-  abstract vertex_data(format: VertexFormat, vertices: Array<Vertex>): void
+  abstract vertex_data(format: VertexFormat, data: ArrayBuffer): void
+
 }
 
 export abstract class Shader {
