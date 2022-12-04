@@ -24,7 +24,7 @@ export class _Time {
     let time = this.seconds
     let delta = this.delta
 
-    let last = Math.floor(time - offset - delta / interval)
+    let last = Math.floor((time - offset - delta) / interval)
     let next = Math.floor((time - offset) / interval)
     return last < next
   }
