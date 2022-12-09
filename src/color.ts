@@ -5,6 +5,16 @@ export class Color {
                                           (rgb & 0x0000ff),
                                           255)
 
+  static lerp = (a: Color, b: Color, t: number) => {
+    if (t < 0) { t = 0 }
+    if (t > 1) { t = 1 }
+
+    return new Color(a.r + (b.r - a.r) * t,
+                     a.g + (b.g - a.g) * t,
+                     a.b + (b.b - a.b) * t,
+                     a.a + (b.a - a.a) * t)
+  }
+
   static white = new Color(255, 255, 255, 255)
   static black = new Color(0, 0, 0, 255)
   static red = new Color(255, 0, 0, 255)
