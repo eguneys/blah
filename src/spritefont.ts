@@ -28,7 +28,7 @@ export class SpriteFont {
   static make_from_font = (font: Font, size: number) => {
 
 
-    let charset = [{from: 32, to: 127}, { from: 161, to: 255 }]
+    let charset = [{from: 32, to: 127}, { from: 161, to: 355 }]
     let res = new SpriteFont()
 
     res.rebuild(font, size, charset)
