@@ -350,7 +350,25 @@ export class Batch {
       color, color, color, color,
       m_tex_mult, m_tex_wash, 0)
   }
-  stex_o(subtexture: Subtexture, position: Vec2, origin: Vec2, scale: Vec2, rotation: number, color: Color) {
+  stex_o(sub: Subtexture, pos: Vec2, origin: Vec2, scale: Vec2, rotation: number, color: Color) {
+
+    let { m_tex_mult, m_tex_wash } = this
+    this.push_matrix(Mat3x2.create_transform(pos, origin, scale, rotation))
+    this.set_texture(sub.texture)
+
+    this.PUSH_QUAD(
+      sub.draw_coords[0].x, sub.draw_coords[0].y,
+      sub.draw_coords[1].x, sub.draw_coords[1].y,
+      sub.draw_coords[2].x, sub.draw_coords[2].y,
+      sub.draw_coords[3].x, sub.draw_coords[3].y,
+      sub.tex_coords[0].x, sub.tex_coords[0].y,
+      sub.tex_coords[1].x, sub.tex_coords[1].y,
+      sub.tex_coords[2].x, sub.tex_coords[2].y,
+      sub.tex_coords[3].x, sub.tex_coords[3].y,
+      color, color, color, color,
+      m_tex_mult, m_tex_wash, 0)
+
+      this.pop_matrix()
   }
   stex_c(subtexture: Subtexture, clip: Rect, position: Vec2, origin: Vec2, scale: Vec2, rotation: number, color: Color) {
   }
