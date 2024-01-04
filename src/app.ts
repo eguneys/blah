@@ -88,6 +88,7 @@ class _App {
 
     const step = (ticks_curr: number) => {
 
+      /*
       let ticks_diff = ticks_curr - this.app_time_last
       this.app_time_last = ticks_curr
       this.app_time_accumulator += ticks_diff
@@ -104,6 +105,36 @@ class _App {
 
         _step()
       }
+      */
+
+      let time_target = (1.0 / 60) * Time.ticks_per_second
+      let ticks_diff = ticks_curr - this.app_time_last
+      this.app_time_last = ticks_curr
+      this.app_time_accumulator += ticks_diff
+
+
+      while (this.app_time_accumulator >= time_target) {
+        this.app_time_accumulator -= time_target
+
+        Time.delta = 1.0 / 60
+
+        if (Time.pause_timer > 0) {
+          Time.pause_timer -= Time.delta
+          if (Time.pause_timer <= -0.0001) {
+            Time.delta = - Time.pause_timer
+          } else {
+            continue
+          }
+        }
+
+        Time.previous_ticks = Time.ticks
+        Time.ticks += time_target
+        Time.previous_seconds = Time.seconds
+        Time.seconds += Time.delta
+
+        _step()
+      }
+
 
       {
         this.renderer.before_render()
